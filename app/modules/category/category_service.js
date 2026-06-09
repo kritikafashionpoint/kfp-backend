@@ -1,6 +1,6 @@
 import cloudinary from "../../config/cloudinary.js";
 import { sendOtpMail } from "../../config/nodemailer.js"
-import pool from "../../config/pgDb.js"
+import pool from "../../config/pgDB.js"
 import bcrypt from "bcrypt";
 import streamifier from "streamifier";
 

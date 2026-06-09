@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken"
 import bcrypt from 'bcrypt'
-import pool from "../../../config/pgDb.js"
+import pool from "../../../config/pgDB.js"
 import { sendOtpMail } from "../../../config/nodemailer.js"
 import { changePasswordService, checkEmailAndPasswordService, checkEmailExistsService, sendOtpService } from "../admin_auth.service.js"
 

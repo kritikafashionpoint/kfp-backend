@@ -1,4 +1,4 @@
-import pool from "../../config/pgDb.js";
+import pool from "../../config/pgDB.js";
 import { createNewCategoryService, DeleteCategoryService, UpdateCategoryService } from "./category_service.js";
 
 export const createNewCategory = async (req, res) => {

@@ -1,7 +1,7 @@
 // product.service.js
 
 import cloudinary from "../../config/cloudinary.js";
-import pool from "../../config/pgDb.js";
+import pool from "../../config/pgDB.js";
 import streamifier from "streamifier";
 
 

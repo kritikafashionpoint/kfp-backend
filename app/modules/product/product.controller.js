@@ -1,6 +1,6 @@
 // product.controller.js
 
-import pool from "../../config/pgDb.js";
+import pool from "../../config/pgDB.js";
 import { createProductService, deleteProductService, UpdateProductService } from "./product.service.js";
 
 export const createProduct = async (req, res) => {

@@ -1,4 +1,4 @@
-import pool from "../../config/pgDb.js";
+import pool from "../../config/pgDB.js";
 
 export const SaveContactService = async (req) => {
     try {
