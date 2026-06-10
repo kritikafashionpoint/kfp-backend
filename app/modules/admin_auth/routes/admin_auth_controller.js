@@ -33,8 +33,8 @@ export const adminLogin = async (req, res) => {
     } catch (error) {
         console.log(error.message || "Server Error")
         return res.status(500).json({
-            success : false,
-            msg : 'Something Went Wrong'
+            success: false,
+            msg: 'Something Went Wrong'
         })
     }
 }

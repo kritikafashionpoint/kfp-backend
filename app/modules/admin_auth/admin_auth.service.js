@@ -37,11 +37,6 @@ export const checkEmailAndPasswordService = async (admin_email, admin_password) 
 
 export const sendOtpService = async (admin) => {
     try {
-        if (admin.otp_expire && new Date() > new Date(admin.otp_expire)) {
-            const error = new Error("OTP has expired. Please request a new OTP.");
-            error.statusCode = 410;
-            throw error;
-        }
 
         const otp = Math.floor(100000 + Math.random() * 900000);
         const expiry = new Date(Date.now() + 5 * 60 * 1000);
