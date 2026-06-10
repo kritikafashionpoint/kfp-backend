@@ -49,7 +49,7 @@ const startServer = async () => {
         // 2️⃣ Check admin exist
         const adminCheck = await pool.query(
             "SELECT * FROM admin_user WHERE admin_email=$1",
-            ["tarunmehra80790@gmail.com"]
+            ["kritikafashionpoint6@gmail.com"]
         );
 
         if (adminCheck.rows.length === 0) {
@@ -59,7 +59,7 @@ const startServer = async () => {
 
             await pool.query(
                 "INSERT INTO admin_user (admin_email, admin_password) VALUES ($1,$2)",
-                ["tarunmehra80790@gmail.com", hashedPassword]
+                ["kritikafashionpoint6@gmail.com", hashedPassword]
             );
 
             console.log("Default admin created ✔");
