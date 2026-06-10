@@ -54,6 +54,20 @@ CREATE TABLE cart (
 
 
 -- admin tables
+CREATE TABLE IF NOT EXISTS admin_user
+(
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    admin_email character varying(150) NOT NULL,
+    admin_password character varying(255) NOT NULL,
+    otp bigint,
+    otp_expire timestamp without time zone,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT admin_user_pkey PRIMARY KEY (id),
+    CONSTRAINT admin_user_admin_email_key UNIQUE (admin_email),
+    CONSTRAINT admin_user_otp_check CHECK (otp >= 100000 AND otp <= 999999)
+);
+
 CREATE TABLE IF NOT EXISTS categories
 (
     category_id uuid NOT NULL DEFAULT uuid_generate_v4(),

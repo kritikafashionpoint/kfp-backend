@@ -37,34 +37,29 @@ export const checkEmailAndPasswordService = async (admin_email, admin_password) 
 
 export const sendOtpService = async (admin) => {
     try {
-        const otp = Math.floor(100000 + Math.random() * 900000)
-
-        // expires after 5 minutes
-        const expiry = new Date(Date.now() + 5 * 60 * 1000)
-
-        if (new Date() > new Date(admin.otp_expire)) {
-            return res.status(410).json({
-                success: false,
-                msg: "OTP has expired. Please request a new OTP."
-            });
+        if (admin.otp_expire && new Date() > new Date(admin.otp_expire)) {
+            const error = new Error("OTP has expired. Please request a new OTP.");
+            error.statusCode = 410;
+            throw error;
         }
+
+        const otp = Math.floor(100000 + Math.random() * 900000);
+        const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
         await pool.query(
             `UPDATE admin_user
              SET otp = $1, otp_expire = $2
              WHERE id = $3`,
             [otp, expiry, admin.id]
-        )
+        );
 
-        const mailRes = await sendOtpMail(admin.admin_email, otp)
-
-        return mailRes
+        return await sendOtpMail(admin.admin_email, otp);
 
     } catch (error) {
-        console.log("OTP SERVICE ERROR ❌:", error)
-        throw error
+        console.log("OTP SERVICE ERROR ❌:", error);
+        throw error;
     }
-}
+};
 
 export const checkEmailExistsService = async (admin_email) => {
     try {

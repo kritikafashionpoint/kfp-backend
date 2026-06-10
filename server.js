@@ -36,14 +36,14 @@ const startServer = async () => {
       CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 
-  CREATE TABLE IF NOT EXISTS admin_user (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    admin_email VARCHAR(150) UNIQUE NOT NULL,
-    admin_password VARCHAR(255) NOT NULL,
-    otp BIGINT CHECK (otp >= 100000 AND otp <= 999999),
-    otp_expire BIGINT CHECK (otp_expire > 0),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+        CREATE TABLE IF NOT EXISTS admin_user (
+            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+            admin_email VARCHAR(150) UNIQUE NOT NULL,
+            admin_password VARCHAR(255) NOT NULL,
+            otp BIGINT CHECK (otp >= 100000 AND otp <= 999999),
+            otp_expire TIMESTAMP WITHOUT TIME ZONE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
 `);
 
         // 2️⃣ Check admin exist
@@ -55,7 +55,7 @@ const startServer = async () => {
         if (adminCheck.rows.length === 0) {
 
             // bcrypt hash
-            const hashedPassword = await bcrypt.hash("Tarun123", 10);
+            const hashedPassword = await bcrypt.hash("Suresh001", 10);
 
             await pool.query(
                 "INSERT INTO admin_user (admin_email, admin_password) VALUES ($1,$2)",
