@@ -115,6 +115,10 @@ CREATE TABLE products (
 
     p_include_items VARCHAR(255),
 
+    p_meta_title VARCHAR(255),
+
+    p_meta_description  VARCHAR(255),
+
     category_id UUID,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

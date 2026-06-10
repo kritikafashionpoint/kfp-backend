@@ -33,6 +33,8 @@ export const createProductService = async (req) => {
             p_material,
             p_finishing,
             p_occasion,
+            p_meta_title,
+            p_meta_description,
             p_include_items,
             category_id,
         } = req.body;
@@ -173,13 +175,15 @@ export const createProductService = async (req) => {
                 p_finishing,
                 p_occasion,
                 p_include_items,
+                p_meta_title,
+                p_meta_description,
                 category_id
             )
 
             VALUES (
                 $1,$2,$3,$4,$5,$6,$7,
                 $8,$9,$10,$11,$12,$13,
-                $14,$15,$16
+                $14,$15,$16,$17,$18
             )
 
             RETURNING *
@@ -217,6 +221,10 @@ export const createProductService = async (req) => {
             p_occasion,
 
             p_include_items,
+
+            p_meta_title,
+
+            p_meta_description,
 
             category_id || null,
         ];
@@ -331,6 +339,8 @@ export const UpdateProductService = async (req) => {
             p_finishing,
             p_occasion,
             p_include_items,
+            p_meta_title,
+            p_meta_description,
             category_id,
         } = req.body;
 
@@ -574,30 +584,32 @@ export const UpdateProductService = async (req) => {
         const updatedProduct =
             await client.query(
                 `
-                UPDATE products
-                SET
-                    p_title = $1,
-                    p_slug = $2,
-                    p_short_description = $3,
-                    p_full_description = $4,
-                    p_type = $5,
-                    is_top_selling = $6,
-                    p_quantity = $7,
-                    p_sale_price = $8,
-                    p_customer_price = $9,
-                    p_discount = $10,
-                    p_advance_payment = $11,
-                    p_material = $12,
-                    p_finishing = $13,
-                    p_occasion = $14,
-                    p_include_items = $15,
-                    category_id = $16,
-                    updated_at = CURRENT_TIMESTAMP
+        UPDATE products
+        SET
+            p_title = $1,
+            p_slug = $2,
+            p_short_description = $3,
+            p_full_description = $4,
+            p_type = $5,
+            is_top_selling = $6,
+            p_quantity = $7,
+            p_sale_price = $8,
+            p_customer_price = $9,
+            p_discount = $10,
+            p_advance_payment = $11,
+            p_material = $12,
+            p_finishing = $13,
+            p_occasion = $14,
+            p_include_items = $15,
+            p_meta_title = $16,
+            p_meta_description = $17,
+            category_id = $18,
+            updated_at = CURRENT_TIMESTAMP
 
-                WHERE id = $17
+        WHERE id = $19
 
-                RETURNING *
-                `,
+        RETURNING *
+        `,
                 [
                     p_title,
 
@@ -609,49 +621,43 @@ export const UpdateProductService = async (req) => {
 
                     p_type,
 
-                    is_top_selling ===
-                    "true" ||
-                    is_top_selling ===
-                    true,
+                    is_top_selling === "true" ||
+                    is_top_selling === true,
 
                     p_quantity
-                        ? Number(
-                            p_quantity
-                        )
+                        ? Number(p_quantity)
                         : 0,
 
                     p_sale_price
-                        ? Number(
-                            p_sale_price
-                        )
+                        ? Number(p_sale_price)
                         : 0,
 
                     p_customer_price
-                        ? Number(
-                            p_customer_price
-                        )
+                        ? Number(p_customer_price)
                         : 0,
 
                     p_discount
-                        ? Number(
-                            p_discount
-                        )
+                        ? Number(p_discount)
                         : null,
 
                     p_advance_payment
-                        ? Number(
-                            p_advance_payment
-                        )
+                        ? Number(p_advance_payment)
                         : null,
 
                     p_material,
+
                     p_finishing,
+
                     p_occasion,
+
                     p_include_items,
 
+                    p_meta_title,
+
+                    p_meta_description,
+
                     category_id &&
-                        category_id !==
-                        "undefined"
+                        category_id !== "undefined"
                         ? category_id
                         : null,
 

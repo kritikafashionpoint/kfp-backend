@@ -655,3 +655,61 @@ export const deleteProduct = async (req, res) => {
         });
     }
 };
+
+export const fetchProductBySlug = async (req, res) => {
+    try {
+
+        const { slug } = req.params;
+
+        if (!slug) {
+            return res.status(400).json({
+                success: false,
+                code: "MISSING_SLUG",
+                msg: "Product slug is required",
+            });
+        }
+
+        const query = `
+            SELECT
+                id,
+                p_title,
+                p_slug,
+                p_meta_title,
+                p_meta_description
+            FROM products
+            WHERE p_slug = $1
+            LIMIT 1
+        `;
+
+        const result = await pool.query(
+            query,
+            [slug]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                code: "PRODUCT_NOT_FOUND",
+                msg: "Product not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: result.rows[0],
+        });
+
+    } catch (error) {
+
+        console.error(
+            "FETCH PRODUCT META ERROR =>",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            code: "SERVER_ERROR",
+            msg: "Internal server error",
+        });
+    }
+};
