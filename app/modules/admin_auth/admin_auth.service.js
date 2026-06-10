@@ -1,3 +1,4 @@
+import pool from "../../config/pgDB.js";
 
 //Authentication Services
 export const checkEmailAndPasswordService = async (admin_email, admin_password) => {
