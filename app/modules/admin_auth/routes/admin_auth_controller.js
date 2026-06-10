@@ -127,7 +127,7 @@ export const resendOtp = async (req, res) => {
         // generate new OTP
         const otp = Math.floor(100000 + Math.random() * 900000)
 
-        const otp_expire = Date.now() + 5 * 60 * 1000 // 5 minutes
+        const otp_expire = new Date(Date.now() + 5 * 60 * 1000);
 
         await pool.query(
             `UPDATE admin_user SET otp=$1 , otp_expire=$2 WHERE id=$3`,
