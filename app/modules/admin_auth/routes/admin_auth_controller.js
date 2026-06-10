@@ -77,8 +77,7 @@ export const verifyOtp = async (req, res) => {
                 id: admin.id,
                 email: admin.admin_email
             },
-            process.env.JWT_SECRET,
-            { expiresIn: "1d" }
+            process.env.JWT_SECRET
         )
 
         return res.status(200).json({
