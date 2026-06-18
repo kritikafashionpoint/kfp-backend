@@ -171,51 +171,6 @@ CREATE TABLE contact_messages (
 
 -- payment tables
 
-CREATE TABLE orders (
-    order_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-
-    user_id UUID NOT NULL,
-
-    amount NUMERIC(10,2) NOT NULL,
-
-    payment_type VARCHAR(20),
-
-    transaction_id VARCHAR(255),
-
-    payment_status VARCHAR(30) DEFAULT 'PENDING',
-
-    order_status VARCHAR(30) DEFAULT 'PENDING',
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_order_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(user_id)
-);
-
-
-CREATE TABLE order_items (
-    order_item_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-
-    order_id UUID NOT NULL,
-
-    product_id UUID NOT NULL,
-
-    quantity INT NOT NULL DEFAULT 1,
-
-    price NUMERIC(10,2) NOT NULL,
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_order
-        FOREIGN KEY (order_id)
-        REFERENCES orders(order_id)
-        ON DELETE CASCADE,
-
-    CONSTRAINT fk_product
-        FOREIGN KEY (product_id)
-        REFERENCES products(id)
-);
 
 CREATE TABLE wishlist (
     wishlist_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -239,3 +194,52 @@ CREATE TABLE wishlist (
     CONSTRAINT unique_user_product
         UNIQUE (user_id, product_id)
 );
+
+
+
+
+
+
+CREATE TABLE orders (
+    id BIGSERIAL PRIMARY KEY,
+
+    uuid VARCHAR(100) UNIQUE NOT NULL,
+
+    user_id UUID NOT NULL,
+
+    total_amount NUMERIC(10,2) NOT NULL,
+
+    payment_type VARCHAR(20),
+
+    payment_status VARCHAR(20) DEFAULT 'pending',
+
+    order_status VARCHAR(20) DEFAULT 'pending',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_orders_user
+        FOREIGN KEY (user_id)
+        REFERENCES web_user(user_id)
+);
+
+CREATE TABLE order_items (
+    id BIGSERIAL PRIMARY KEY,
+
+    order_id BIGINT NOT NULL,
+
+    product_id UUID NOT NULL,
+
+    quantity INTEGER DEFAULT 1,
+
+    price NUMERIC(10,2) NOT NULL,
+
+    CONSTRAINT fk_order_items_order
+        FOREIGN KEY (order_id)
+        REFERENCES orders(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_order_items_product
+        FOREIGN KEY (product_id)
+        REFERENCES products(id)
+);
+

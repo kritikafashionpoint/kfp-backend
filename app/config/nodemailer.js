@@ -128,3 +128,155 @@ Kritika Fashion Point
         `,
     });
 };
+
+export const sendOrderBookedMail = async (
+    email,
+    customerName,
+    orderId,
+    paymentId,
+    amount,
+    paymentType
+) => {
+
+    const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: process.env.MAIL_USER,
+            pass: process.env.MAIL_PASS,
+        },
+    });
+
+    await transporter.sendMail({
+        from: `"Kritika Fashion Point Orders" <${process.env.MAIL_USER}>`,
+        to: email,
+
+        subject: `Order Confirmation #${orderId}`,
+
+        html: `
+        <div style="
+            max-width:600px;
+            margin:0 auto;
+            padding:32px 20px;
+            font-family:Arial,Helvetica,sans-serif;
+            background:#ffffff;
+            color:#222222;
+        ">
+
+            <h2 style="
+                margin:0 0 24px 0;
+                color:#111111;
+                font-size:24px;
+            ">
+                Order Confirmation
+            </h2>
+
+            <p style="
+                font-size:15px;
+                line-height:24px;
+                margin-bottom:20px;
+            ">
+                Hello ${customerName},
+            </p>
+
+            <p style="
+                font-size:15px;
+                line-height:24px;
+            ">
+                We have successfully received your payment and your order has been confirmed.
+            </p>
+
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+                margin:25px 0;
+                border:1px solid #e5e5e5;
+            ">
+                <tr>
+                    <td style="padding:12px;border-bottom:1px solid #e5e5e5;">
+                        Order ID
+                    </td>
+                    <td style="padding:12px;border-bottom:1px solid #e5e5e5;">
+                        ${orderId}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:12px;border-bottom:1px solid #e5e5e5;">
+                        Payment ID
+                    </td>
+                    <td style="padding:12px;border-bottom:1px solid #e5e5e5;">
+                        ${paymentId}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:12px;border-bottom:1px solid #e5e5e5;">
+                        Amount Paid
+                    </td>
+                    <td style="padding:12px;border-bottom:1px solid #e5e5e5;">
+                        ₹${amount}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:12px;">
+                        Payment Type
+                    </td>
+                    <td style="padding:12px;">
+                        ${paymentType === "advance"
+                ? "Advance Payment"
+                : "Full Payment"}
+                    </td>
+                </tr>
+            </table>
+
+            <p style="
+                font-size:14px;
+                line-height:24px;
+            ">
+                Your order is now being processed.
+            </p>
+
+            <hr style="
+                border:none;
+                border-top:1px solid #e5e5e5;
+                margin:30px 0;
+            ">
+
+            <p style="
+                font-size:12px;
+                color:#666666;
+                line-height:20px;
+            ">
+                This is an automated transactional email regarding your order.
+            </p>
+
+            <p style="
+                font-size:12px;
+                color:#666666;
+                line-height:20px;
+            ">
+                Kritika Fashion Point
+            </p>
+
+        </div>
+        `,
+
+        text: `
+Order Confirmation
+
+Hello ${customerName},
+
+Your payment has been received and your order has been confirmed.
+
+Order ID: ${orderId}
+Payment ID: ${paymentId}
+Amount Paid: ₹${amount}
+Payment Type: ${paymentType}
+
+This is an automated transactional email.
+
+Kritika Fashion Point
+        `
+    });
+};
