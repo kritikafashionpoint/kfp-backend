@@ -1,5 +1,4 @@
 import pool from "../../config/pgDB.js";
-import { v4 as uuidv4 } from "uuid";
 import razorpay from "../razorpay/razorpay.js";
 import crypto from 'crypto'
 import { sendOrderBookedMail } from "../../config/nodemailer.js";
@@ -53,7 +52,7 @@ export const createOrder = async (req, res) => {
                 ? Number(product.p_advance_payment)
                 : Number(product.p_customer_price);
 
-        const order_uuid = uuidv4();
+        const order_uuid = crypto.randomUUID();
 
         // Razorpay Order Create
         const razorpayOrder = await razorpay.orders.create({

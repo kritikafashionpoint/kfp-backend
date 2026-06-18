@@ -200,27 +200,26 @@ CREATE TABLE wishlist (
 
 
 
-CREATE TABLE orders (
-    id BIGSERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS orders(
+    id bigint NOT NULL DEFAULT nextval('orders_id_seq'::regclass),
+    uuid character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    user_id uuid NOT NULL,
+    total_amount numeric(10,2) NOT NULL,
+    payment_type character varying(20) COLLATE pg_catalog."default",
+    payment_status character varying(20) COLLATE pg_catalog."default" DEFAULT 'pending'::character varying,
+    order_status character varying(20) COLLATE pg_catalog."default" DEFAULT 'pending'::character varying,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    razorpay_order_id character varying(255) COLLATE pg_catalog."default",
+    razorpay_payment_id character varying(255) COLLATE pg_catalog."default",
+    razorpay_signature text COLLATE pg_catalog."default",
+    CONSTRAINT orders_pkey PRIMARY KEY (id),
+    CONSTRAINT orders_uuid_key UNIQUE (uuid),
+    CONSTRAINT fk_orders_user FOREIGN KEY (user_id)
+        REFERENCES public.web_user (user_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
 
-    uuid VARCHAR(100) UNIQUE NOT NULL,
-
-    user_id UUID NOT NULL,
-
-    total_amount NUMERIC(10,2) NOT NULL,
-
-    payment_type VARCHAR(20),
-
-    payment_status VARCHAR(20) DEFAULT 'pending',
-
-    order_status VARCHAR(20) DEFAULT 'pending',
-
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_orders_user
-        FOREIGN KEY (user_id)
-        REFERENCES web_user(user_id)
-);
 
 CREATE TABLE order_items (
     id BIGSERIAL PRIMARY KEY,
