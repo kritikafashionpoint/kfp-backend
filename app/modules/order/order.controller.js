@@ -280,3 +280,128 @@ export const verifyPayment = async (req, res) => {
         });
     }
 };
+
+export const viewAllOrders = async (req, res) => {
+
+    try {
+
+        const query = `
+                    SELECT
+                o.id,
+                o.uuid,
+                o.total_amount,
+                o.payment_type,
+                o.payment_status,
+                o.order_status,
+                o.created_at,
+
+                w.user_id,
+                w.name,
+                w.email,
+                w.mobile,
+
+                oi.id AS order_item_id,
+                oi.quantity,
+                oi.price,
+
+                p.id AS product_id,
+                p.p_title,
+                p.p_slug,
+                p.p_short_description,
+                p.p_full_description,
+                p.p_discount,
+                p.p_advance_payment,
+                p.p_type,
+                p.is_top_selling,
+                p.p_quantity,
+                p.p_sale_price,
+                p.p_customer_price,
+                p.p_material,
+                p.p_finishing,
+                p.p_occasion,
+                p.p_include_items,
+                p.p_meta_title,
+                p.p_meta_description,
+                p.category_id,
+
+                pi.index_image,
+                pi.gallery_images,
+
+                c.category_name,
+                c.category_slug
+
+            FROM orders o
+
+            INNER JOIN web_user w
+                ON o.user_id = w.user_id
+
+            LEFT JOIN order_items oi
+                ON o.id = oi.order_id
+
+            LEFT JOIN products p
+                ON oi.product_id = p.id
+
+            LEFT JOIN product_images pi
+                ON p.id = pi.product_id
+
+            LEFT JOIN categories c
+                ON p.category_id = c.category_id
+
+            ORDER BY o.id DESC`
+
+        const result = await pool.query(query);
+
+        // Group orders
+        const ordersMap = {};
+
+        result.rows.forEach(row => {
+
+            if (!ordersMap[row.id]) {
+                ordersMap[row.id] = {
+                    order_id: row.id,
+                    order_uuid: row.uuid,
+                    total_amount: row.total_amount,
+                    payment_type: row.payment_type,
+                    payment_status: row.payment_status,
+                    order_status: row.order_status,
+                    created_at: row.created_at,
+
+                    customer: {
+                        user_id: row.user_id,
+                        name: row.name,
+                        email: row.email,
+                        mobile: row.mobile,
+                    },
+
+                    items: []
+                };
+            }
+
+            if (row.product_id) {
+                ordersMap[row.id].items.push({
+                    order_item_id: row.order_item_id,
+                    product_id: row.product_id,
+                    product_title: row.p_title,
+                    product_slug: row.p_slug,
+                    product_image: row.index_image,
+                    quantity: row.quantity,
+                    price: row.price
+                });
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            count: Object.keys(ordersMap).length,
+            data: Object.values(ordersMap)
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
