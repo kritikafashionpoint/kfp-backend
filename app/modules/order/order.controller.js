@@ -347,7 +347,7 @@ export const viewAllOrders = async (req, res) => {
             LEFT JOIN categories c
                 ON p.category_id = c.category_id
 
-            ORDER BY o.id DESC`
+            ORDER BY o.id ASC`
 
         const result = await pool.query(query);
 
