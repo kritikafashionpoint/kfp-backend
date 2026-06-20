@@ -1,7 +1,7 @@
 import express from "express";
 import { addtoCart, addToWishlist, createUser, loginUser, removeFromCart, sendOtp, verifyOtp, viewAllUsers, viewCart, viewWishList } from "../user.controller.js";
 import { checkToken } from "../../../middleware/checkToken.js";
-import { createOrder, getUserAddressById, outForDelivery, saveUserAddress, verifyPayment, viewAllOrders, viewOrderByUserId } from "../../order/order.controller.js";
+import { checkUserAddExists, createOrder, getUserAddressById, outForDelivery, saveUserAddress, verifyPayment, viewAllOrders, viewOrderByUserId } from "../../order/order.controller.js";
 
 const userRoute = express.Router()
 
@@ -30,6 +30,8 @@ userRoute.post('/out-for-delivery', outForDelivery)
 userRoute.post('/save-address', checkToken, saveUserAddress)
 
 userRoute.post('/get-user-address', checkToken, getUserAddressById)
+userRoute.post('/check-address', checkToken, checkUserAddExists)
+
 
 
 

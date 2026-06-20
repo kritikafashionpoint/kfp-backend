@@ -287,118 +287,164 @@ export const viewAllOrders = async (req, res) => {
     try {
 
         const query = `
-    SELECT
-        o.id,
-        o.uuid,
-        o.total_amount,
-        o.payment_type,
-        o.payment_status,
-        o.order_status,
-        o.created_at,
+        SELECT
+            o.id AS order_id,
+            o.uuid,
+            o.total_amount,
+            o.payment_type,
+            o.payment_status,
+            o.order_status,
+            o.created_at AS order_created_at,
 
-        w.user_id,
-        w.name,
-        w.email,
-        w.mobile,
+            w.user_id,
+            w.name AS customer_name,
+            w.email AS customer_email,
+            w.mobile AS customer_mobile,
 
-        ua.name AS address_name,
-        ua.mobile AS address_mobile,
-        ua.city,
-        ua.pincode,
-        ua.address,
+            ua.id AS address_id,
+            ua.name AS address_name,
+            ua.mobile AS address_mobile,
+            ua.city AS address_city,
+            ua.pincode AS address_pincode,
+            ua.address AS address_text,
+            ua.created_at AS address_created_at,
+            ua.updated_at AS address_updated_at,
 
-        oi.id AS order_item_id,
-        oi.quantity,
-        oi.price,
+            oi.id AS order_item_id,
+            oi.quantity,
+            oi.price,
 
-        p.id AS product_id,
-        p.p_title,
-        p.p_slug,
-        p.p_short_description,
-        p.p_full_description,
-        p.p_discount,
-        p.p_advance_payment,
-        p.p_type,
-        p.is_top_selling,
-        p.p_quantity,
-        p.p_sale_price,
-        p.p_customer_price,
-        p.p_material,
-        p.p_finishing,
-        p.p_occasion,
-        p.p_include_items,
-        p.p_meta_title,
-        p.p_meta_description,
-        p.category_id,
+            p.id AS product_id,
+            p.p_title,
+            p.p_slug,
+            p.p_short_description,
+            p.p_full_description,
+            p.p_discount,
+            p.p_advance_payment,
+            p.p_type,
+            p.is_top_selling,
+            p.p_quantity,
+            p.p_sale_price,
+            p.p_customer_price,
+            p.p_material,
+            p.p_finishing,
+            p.p_occasion,
+            p.p_include_items,
+            p.p_meta_title,
+            p.p_meta_description,
+            p.category_id,
 
-        pi.index_image,
-        pi.gallery_images,
+            pi.index_image,
+            pi.gallery_images,
 
-        c.category_name,
-        c.category_slug
+            c.category_name,
+            c.category_slug
 
-    FROM orders o
+        FROM orders o
 
-    INNER JOIN web_user w
-        ON o.user_id = w.user_id
+        INNER JOIN web_user w
+            ON o.user_id = w.user_id
 
-    LEFT JOIN user_addresses ua
-        ON o.user_id = ua.user_id
+        LEFT JOIN user_addresses ua
+            ON o.user_id = ua.user_id
 
-    LEFT JOIN order_items oi
-        ON o.id = oi.order_id
+        LEFT JOIN order_items oi
+            ON o.id = oi.order_id
 
-    LEFT JOIN products p
-        ON oi.product_id = p.id
+        LEFT JOIN products p
+            ON oi.product_id = p.id
 
-    LEFT JOIN product_images pi
-        ON p.id = pi.product_id
+        LEFT JOIN product_images pi
+            ON p.id = pi.product_id
 
-    LEFT JOIN categories c
-        ON p.category_id = c.category_id
+        LEFT JOIN categories c
+            ON p.category_id = c.category_id
 
-    WHERE o.order_status != 'pending'
+        WHERE o.order_status != 'pending'
 
-    ORDER BY o.created_at DESC
-`;
+        ORDER BY o.created_at DESC
+    `;
 
         const result = await pool.query(query);
 
-        // Group orders
         const ordersMap = {};
 
-        result.rows.forEach(row => {
+        result.rows.forEach((row) => {
 
-            if (!ordersMap[row.id]) {
-                ordersMap[row.id] = {
-                    order_id: row.id,
+            if (!ordersMap[row.order_id]) {
+
+                ordersMap[row.order_id] = {
+                    order_id: row.order_id,
                     order_uuid: row.uuid,
                     total_amount: row.total_amount,
                     payment_type: row.payment_type,
                     payment_status: row.payment_status,
                     order_status: row.order_status,
-                    created_at: row.created_at,
+                    created_at: row.order_created_at,
 
                     customer: {
                         user_id: row.user_id,
-                        name: row.name,
-                        email: row.email,
-                        mobile: row.mobile,
+                        name: row.customer_name,
+                        email: row.customer_email,
+                        mobile: row.customer_mobile,
                     },
+
+                    address: row.address_id
+                        ? {
+                            id: row.address_id,
+                            name: row.address_name,
+                            mobile: row.address_mobile,
+                            city: row.address_city,
+                            pincode: row.address_pincode,
+                            address: row.address_text,
+                            created_at: row.address_created_at,
+                            updated_at: row.address_updated_at,
+                        }
+                        : null,
 
                     items: []
                 };
             }
 
             if (row.product_id) {
-                ordersMap[row.id].items.push({
+
+                ordersMap[row.order_id].items.push({
                     order_item_id: row.order_item_id,
                     product_id: row.product_id,
                     product_title: row.p_title,
                     product_slug: row.p_slug,
                     product_image: row.index_image,
                     quantity: row.quantity,
-                    price: row.price
+                    price: row.price,
+
+                    product_details: {
+                        short_description: row.p_short_description,
+                        full_description: row.p_full_description,
+                        discount: row.p_discount,
+                        advance_payment: row.p_advance_payment,
+                        type: row.p_type,
+                        is_top_selling: row.is_top_selling,
+                        quantity_available: row.p_quantity,
+                        sale_price: row.p_sale_price,
+                        customer_price: row.p_customer_price,
+                        material: row.p_material,
+                        finishing: row.p_finishing,
+                        occasion: row.p_occasion,
+                        include_items: row.p_include_items,
+                        meta_title: row.p_meta_title,
+                        meta_description: row.p_meta_description,
+                    },
+
+                    category: {
+                        id: row.category_id,
+                        name: row.category_name,
+                        slug: row.category_slug,
+                    },
+
+                    images: {
+                        index_image: row.index_image,
+                        gallery_images: row.gallery_images,
+                    }
                 });
             }
         });
@@ -406,15 +452,16 @@ export const viewAllOrders = async (req, res) => {
         return res.status(200).json({
             success: true,
             count: Object.keys(ordersMap).length,
-            data: Object.values(ordersMap)
+            data: Object.values(ordersMap),
         });
 
     } catch (error) {
+
         console.error(error);
 
         return res.status(500).json({
             success: false,
-            message: "Internal Server Error"
+            message: "Internal Server Error",
         });
     }
 };
@@ -729,6 +776,40 @@ export const getUserAddressById = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Internal Server Error",
+        });
+    }
+};
+
+export const checkUserAddExists = async (req, res) => {
+    const user_id = req.user.id;
+    console.log("USER ID:", user_id);
+
+    try {
+
+
+
+        const result = await pool.query(
+            `
+            SELECT id
+            FROM user_addresses
+            WHERE user_id = $1
+            LIMIT 1
+            `,
+            [user_id]
+        );
+
+        return res.status(200).json({
+            success: true,
+            address_exists: result.rows.length > 0
+        });
+
+    } catch (error) {
+
+        console.log("checkUserAddExists Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
         });
     }
 };
