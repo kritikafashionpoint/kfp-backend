@@ -242,3 +242,23 @@ CREATE TABLE order_items (
         REFERENCES products(id)
 );
 
+
+
+
+
+CREATE TABLE user_addresses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL UNIQUE,
+    name VARCHAR(150) NOT NULL,
+    mobile VARCHAR(15) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    pincode VARCHAR(10) NOT NULL,
+    address TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user_address
+        FOREIGN KEY (user_id)
+        REFERENCES web_user(user_id)
+        ON DELETE CASCADE
+);

@@ -14,7 +14,8 @@ export const createOrder = async (req, res) => {
             product_id,
             payment_type,
             payment_status = "pending",
-            order_status = "pending"
+            order_status = "pending",
+            total_quantity
         } = req.body;
 
         const user_id = req.user.id;
@@ -49,8 +50,8 @@ export const createOrder = async (req, res) => {
 
         const amount =
             payment_type === "advance"
-                ? Number(product.p_advance_payment)
-                : Number(product.p_customer_price);
+                ? Number(product.p_advance_payment * total_quantity)
+                : Number(product.p_customer_price * total_quantity);
 
         const order_uuid = crypto.randomUUID();
 
@@ -111,7 +112,7 @@ export const createOrder = async (req, res) => {
             [
                 order_id,
                 product_id,
-                1,
+                total_quantity,
                 amount
             ]
         );
@@ -286,68 +287,80 @@ export const viewAllOrders = async (req, res) => {
     try {
 
         const query = `
-                    SELECT
-                o.id,
-                o.uuid,
-                o.total_amount,
-                o.payment_type,
-                o.payment_status,
-                o.order_status,
-                o.created_at,
+    SELECT
+        o.id,
+        o.uuid,
+        o.total_amount,
+        o.payment_type,
+        o.payment_status,
+        o.order_status,
+        o.created_at,
 
-                w.user_id,
-                w.name,
-                w.email,
-                w.mobile,
+        w.user_id,
+        w.name,
+        w.email,
+        w.mobile,
 
-                oi.id AS order_item_id,
-                oi.quantity,
-                oi.price,
+        ua.name AS address_name,
+        ua.mobile AS address_mobile,
+        ua.city,
+        ua.pincode,
+        ua.address,
 
-                p.id AS product_id,
-                p.p_title,
-                p.p_slug,
-                p.p_short_description,
-                p.p_full_description,
-                p.p_discount,
-                p.p_advance_payment,
-                p.p_type,
-                p.is_top_selling,
-                p.p_quantity,
-                p.p_sale_price,
-                p.p_customer_price,
-                p.p_material,
-                p.p_finishing,
-                p.p_occasion,
-                p.p_include_items,
-                p.p_meta_title,
-                p.p_meta_description,
-                p.category_id,
+        oi.id AS order_item_id,
+        oi.quantity,
+        oi.price,
 
-                pi.index_image,
-                pi.gallery_images,
+        p.id AS product_id,
+        p.p_title,
+        p.p_slug,
+        p.p_short_description,
+        p.p_full_description,
+        p.p_discount,
+        p.p_advance_payment,
+        p.p_type,
+        p.is_top_selling,
+        p.p_quantity,
+        p.p_sale_price,
+        p.p_customer_price,
+        p.p_material,
+        p.p_finishing,
+        p.p_occasion,
+        p.p_include_items,
+        p.p_meta_title,
+        p.p_meta_description,
+        p.category_id,
 
-                c.category_name,
-                c.category_slug
+        pi.index_image,
+        pi.gallery_images,
 
-            FROM orders o
+        c.category_name,
+        c.category_slug
 
-            INNER JOIN web_user w
-                ON o.user_id = w.user_id
+    FROM orders o
 
-            LEFT JOIN order_items oi
-                ON o.id = oi.order_id
+    INNER JOIN web_user w
+        ON o.user_id = w.user_id
 
-            LEFT JOIN products p
-                ON oi.product_id = p.id
+    LEFT JOIN user_addresses ua
+        ON o.user_id = ua.user_id
 
-            LEFT JOIN product_images pi
-                ON p.id = pi.product_id
+    LEFT JOIN order_items oi
+        ON o.id = oi.order_id
 
-            LEFT JOIN categories c
-                ON p.category_id = c.category_id
+    LEFT JOIN products p
+        ON oi.product_id = p.id
 
-            ORDER BY created_at DESC`
+    LEFT JOIN product_images pi
+        ON p.id = pi.product_id
+
+    LEFT JOIN categories c
+        ON p.category_id = c.category_id
+
+    WHERE o.order_status != 'pending'
+
+    ORDER BY o.created_at DESC
+`;
 
         const result = await pool.query(query);
 
@@ -402,6 +415,320 @@ export const viewAllOrders = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Internal Server Error"
+        });
+    }
+};
+
+export const viewOrderByUserId = async (req, res) => {
+    try {
+
+        const user_id = req.user.id;
+
+        const query = `
+            SELECT
+                o.id AS order_id,
+                o.uuid AS order_uuid,
+                o.total_amount,
+                o.payment_type,
+                o.payment_status,
+                o.order_status,
+                o.created_at,
+
+                oi.id AS order_item_id,
+                oi.quantity,
+                oi.price AS item_price,
+
+                p.id AS product_id,
+                p.p_title,
+                p.p_slug,
+                p.p_short_description,
+                p.p_full_description,
+                p.p_discount,
+                p.p_advance_payment,
+                p.p_type,
+                p.is_top_selling,
+                p.p_quantity,
+                p.p_sale_price,
+                p.p_customer_price,
+                p.p_material,
+                p.p_finishing,
+                p.p_occasion,
+                p.p_include_items,
+                p.p_meta_title,
+                p.p_meta_description,
+
+                c.category_id,
+                c.category_name,
+                c.category_slug,
+
+                pi.index_image,
+                pi.gallery_images
+
+            FROM orders o
+
+            LEFT JOIN order_items oi
+                ON oi.order_id = o.id
+
+            LEFT JOIN products p
+                ON p.id = oi.product_id
+
+            LEFT JOIN product_images pi
+                ON pi.product_id = p.id
+
+            LEFT JOIN categories c
+                ON c.category_id = p.category_id
+
+            WHERE o.user_id = $1
+            AND o.payment_status = 'paid'
+
+            ORDER BY o.created_at DESC
+        `;
+
+        const result = await pool.query(query, [user_id]);
+
+        const ordersMap = {};
+
+        result.rows.forEach((row) => {
+
+            if (!ordersMap[row.order_id]) {
+
+                ordersMap[row.order_id] = {
+                    order_id: row.order_id,
+                    order_uuid: row.order_uuid,
+                    total_amount: row.total_amount,
+                    payment_type: row.payment_type,
+                    payment_status: row.payment_status,
+                    order_status: row.order_status,
+                    created_at: row.created_at,
+                    items: []
+                };
+            }
+
+            if (row.product_id) {
+
+                ordersMap[row.order_id].items.push({
+                    order_item_id: row.order_item_id,
+                    quantity: row.quantity,
+                    ordered_price: row.item_price,
+
+                    product: {
+                        id: row.product_id,
+                        title: row.p_title,
+                        slug: row.p_slug,
+                        short_description: row.p_short_description,
+                        full_description: row.p_full_description,
+
+                        discount: row.p_discount,
+                        advance_payment: row.p_advance_payment,
+
+                        type: row.p_type,
+                        is_top_selling: row.is_top_selling,
+                        stock: row.p_quantity,
+
+                        sale_price: row.p_sale_price,
+                        customer_price: row.p_customer_price,
+
+                        material: row.p_material,
+                        finishing: row.p_finishing,
+                        occasion: row.p_occasion,
+                        include_items: row.p_include_items,
+
+                        meta_title: row.p_meta_title,
+                        meta_description: row.p_meta_description,
+
+                        image: row.index_image,
+                        gallery_images: row.gallery_images,
+
+                        category: {
+                            id: row.category_id,
+                            name: row.category_name,
+                            slug: row.category_slug
+                        }
+                    }
+                });
+            }
+        });
+
+        return res.status(200).json({
+            success: true,
+            count: Object.keys(ordersMap).length,
+            data: Object.values(ordersMap)
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+export const outForDelivery = async (req, res) => {
+    try {
+        const { order_id } = req.body;
+
+        const response = await pool.query(
+            `
+            UPDATE orders
+            SET order_status = 'out_for_delivery'
+            WHERE id = $1
+            RETURNING *;
+            `,
+            [order_id]
+        );
+
+        if (response.rowCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Order marked as out for delivery",
+            order: response.rows[0],
+        });
+    } catch (error) {
+        console.error("Out For Delivery Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+export const saveUserAddress = async (req, res) => {
+    try {
+        const user_id = req.user.id; // auth middleware se
+
+        const {
+            name,
+            mobile,
+            city,
+            pincode,
+            address
+        } = req.body;
+
+        const existingAddress = await pool.query(
+            `SELECT id FROM user_addresses WHERE user_id = $1`,
+            [user_id]
+        );
+
+        if (existingAddress.rows.length > 0) {
+            // Update
+            await pool.query(
+                `
+                UPDATE user_addresses
+                SET
+                    name = $1,
+                    mobile = $2,
+                    city = $3,
+                    pincode = $4,
+                    address = $5,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = $6
+                `,
+                [
+                    name,
+                    mobile,
+                    city,
+                    pincode,
+                    address,
+                    user_id
+                ]
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Address updated successfully"
+            });
+        }
+
+        // Insert
+        await pool.query(
+            `
+            INSERT INTO user_addresses
+            (
+                user_id,
+                name,
+                mobile,
+                city,
+                pincode,
+                address
+            )
+            VALUES ($1,$2,$3,$4,$5,$6)
+            `,
+            [
+                user_id,
+                name,
+                mobile,
+                city,
+                pincode,
+                address
+            ]
+        );
+
+        return res.status(201).json({
+            success: true,
+            message: "Address saved successfully"
+        });
+
+    } catch (error) {
+        console.error("Save Address Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
+export const getUserAddressById = async (req, res) => {
+    try {
+        const user_id = req.user.id;
+
+        const response = await pool.query(
+            `
+            SELECT
+                id,
+                user_id,
+                name,
+                mobile,
+                city,
+                pincode,
+                address,
+                created_at,
+                updated_at
+            FROM user_addresses
+            WHERE user_id = $1
+            LIMIT 1
+            `,
+            [user_id]
+        );
+
+        if (response.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Address not found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: response.rows[0],
+        });
+
+    } catch (error) {
+        console.error("Get Address Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
         });
     }
 };
