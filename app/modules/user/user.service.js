@@ -9,55 +9,27 @@ export const createUserService = async (req) => {
     const {
         name,
         mobile,
-        email,
         password,
     } = req.body;
 
-    const otpData = otpStore.get(email);
-
-    if (!otpData) {
-        return {
-            status: false,
-            code: 403,
-            message: "Please verify OTP first",
-        };
-    }
-
-    if (!otpData.verified) {
-        return {
-            status: false,
-            code: 403,
-            message: "OTP verification pending",
-        };
-    }
-
     const existingUser = await pool.query(
         `
-    SELECT email, mobile
+    SELECT  mobile
     FROM web_user
-    WHERE email = $1
-    OR mobile = $2
+    WHERE mobile = $1
     `,
-        [email, mobile]
+        [mobile]
     );
 
     if (existingUser.rows.length > 0) {
 
         const user = existingUser.rows[0];
 
-        if (user.email === email && user.mobile === mobile) {
+        if (user.mobile === mobile) {
             return {
                 status: false,
                 code: 409,
-                message: "Email and Mobile already registered",
-            };
-        }
-
-        if (user.email === email) {
-            return {
-                status: false,
-                code: 409,
-                message: "Email already registered",
+                message: " Mobile already Registered",
             };
         }
 
@@ -87,26 +59,22 @@ export const createUserService = async (req) => {
         (
             name,
             mobile,
-            email,
             password,
             is_verified
         )
         VALUES
         (
-            $1,$2,$3,$4,true
+            $1,$2,$3,true
         )
         RETURNING *
         `,
         [
             name,
             mobile,
-            email,
             hashedPassword,
         ]
     );
 
-    // remove OTP after registration
-    otpStore.delete(email);
 
     return {
         status: true,

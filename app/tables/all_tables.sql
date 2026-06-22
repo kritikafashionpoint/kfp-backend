@@ -9,8 +9,6 @@ CREATE TABLE web_user (
 
     mobile VARCHAR(15) NOT NULL UNIQUE,
 
-    email VARCHAR(255) NOT NULL UNIQUE,
-
     password TEXT NOT NULL,
 
     is_verified BOOLEAN DEFAULT FALSE,
