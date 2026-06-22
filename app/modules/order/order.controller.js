@@ -223,6 +223,20 @@ export const verifyPayment = async (req, res) => {
             ]
         );
 
+        await pool.query(
+            `
+            UPDATE products p
+            SET p_quantity = GREATEST(
+                p.p_quantity - oi.quantity,
+                0
+            )
+            FROM order_items oi
+            WHERE oi.product_id = p.id
+            AND oi.order_id = $1
+            `,
+            [order_id]
+        );
+
         // Fetch Order Details
         const orderResult = await pool.query(
             `
