@@ -238,8 +238,7 @@ export const verifyPayment = async (req, res) => {
         const userResult = await pool.query(
             `
             SELECT
-                name,
-                email
+                name
             FROM web_user
             WHERE user_id = $1
             `,
@@ -248,23 +247,6 @@ export const verifyPayment = async (req, res) => {
 
         const user = userResult.rows[0];
 
-        console.log("Before mail");
-
-
-        // Send Confirmation Mail
-        if (user?.email) {
-
-            await sendOrderBookedMail(
-                user.email,
-                user.name || "Customer",
-                order.id,
-                razorpay_payment_id,
-                order.total_amount,
-                order.payment_type
-            );
-        }
-
-        console.log("After mail");
 
         return res.status(200).json({
             success: true,
@@ -298,7 +280,6 @@ export const viewAllOrders = async (req, res) => {
 
             w.user_id,
             w.name AS customer_name,
-            w.email AS customer_email,
             w.mobile AS customer_mobile,
 
             ua.id AS address_id,
@@ -385,7 +366,6 @@ export const viewAllOrders = async (req, res) => {
                     customer: {
                         user_id: row.user_id,
                         name: row.customer_name,
-                        email: row.customer_email,
                         mobile: row.customer_mobile,
                     },
 
