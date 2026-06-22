@@ -7,9 +7,8 @@ export const createOrder = async (req, res) => {
     console.log(process.env.RAZORPAY_KEY_ID);
     console.log(process.env.RAZORPAY_KEY_SECRET);
     console.log(process.env.RAZORPAY_KEY_SECRET.length)
+
     try {
-
-
         const {
             product_id,
             payment_type,
@@ -17,6 +16,8 @@ export const createOrder = async (req, res) => {
             order_status = "pending",
             total_quantity
         } = req.body;
+
+
 
         const user_id = req.user.id;
 
@@ -61,6 +62,10 @@ export const createOrder = async (req, res) => {
             currency: "INR",
             receipt: order_uuid
         });
+
+        console.log("PRODUCT", product);
+        console.log("QUANTITY", total_quantity);
+        console.log("AMOUNT", amount);
 
         await pool.query("BEGIN");
 
