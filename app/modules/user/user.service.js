@@ -185,13 +185,13 @@ export const verifyOtpService = async (req) => {
 };
 
 export const loginUserService = async (req) => {
-    const { email, password } = req.body;
+    const { phone, password } = req.body;
 
-    if (!email || !password) {
+    if (!phone || !password) {
         return {
             status: false,
             code: 400,
-            message: "Email and password are required",
+            message: "phone and password are required",
         };
     }
 
@@ -199,9 +199,9 @@ export const loginUserService = async (req) => {
         `
         SELECT *
         FROM web_user
-        WHERE email = $1
+        WHERE mobile = $1
         `,
-        [email]
+        [phone]
     );
 
     if (user.rows.length === 0) {
@@ -231,7 +231,7 @@ export const loginUserService = async (req) => {
     const token = jwt.sign(
         {
             id: userData.user_id,
-            email: userData.email
+            email: userData.phone
         },
         process.env.JWT_SECRET,
         {
