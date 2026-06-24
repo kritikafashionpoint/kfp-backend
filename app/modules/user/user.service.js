@@ -10,7 +10,7 @@ export const createUserService = async (req) => {
         name,
         mobile,
         password,
-    } = req.body;
+    } = req.body
 
     // Remove spaces, +, -, brackets etc.
     mobile = mobile?.replace(/\D/g, "");
