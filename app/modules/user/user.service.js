@@ -6,52 +6,55 @@ import jwt from "jsonwebtoken";
 export const otpStore = new Map();
 
 export const createUserService = async (req) => {
-    const {
+    let {
         name,
         mobile,
         password,
     } = req.body;
 
+    // Remove spaces, +, -, brackets etc.
+    mobile = mobile?.replace(/\D/g, "");
+
+    // Handle Indian country code
+    if (mobile.length === 12 && mobile.startsWith("91")) {
+        mobile = mobile.slice(2);
+    }
+
+    if (!name || !mobile || !password) {
+        return {
+            status: false,
+            code: 400,
+            message: "All fields are required",
+        };
+    }
+
+    // Indian mobile validation
+    if (!/^[6-9]\d{9}$/.test(mobile)) {
+        return {
+            status: false,
+            code: 400,
+            message: "Invalid mobile number",
+        };
+    }
+
     const existingUser = await pool.query(
         `
-    SELECT  mobile
-    FROM web_user
-    WHERE mobile = $1
-    `,
+        SELECT mobile
+        FROM web_user
+        WHERE mobile = $1
+        `,
         [mobile]
     );
-
-    if (existingUser.rows.length > 0) {
-
-        const user = existingUser.rows[0];
-
-        if (user.mobile === mobile) {
-            return {
-                status: false,
-                code: 409,
-                message: " Mobile already Registered",
-            };
-        }
-
-        if (user.mobile === mobile) {
-            return {
-                status: false,
-                code: 409,
-                message: "Mobile number already registered",
-            };
-        }
-    }
 
     if (existingUser.rows.length > 0) {
         return {
             status: false,
             code: 409,
-            message: "User already exists",
+            message: "Mobile number already registered",
         };
     }
 
-    const hashedPassword =
-        await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const result = await pool.query(
         `
@@ -70,16 +73,17 @@ export const createUserService = async (req) => {
         `,
         [
             name,
-            mobile,
+            mobile, // Saved as clean 10-digit number
             hashedPassword,
         ]
     );
 
+    delete result.rows[0].password;
 
     return {
         status: true,
         code: 201,
-        message: "Registration Successful , Please Login To Continue",
+        message: "Registration Successful, Please Login To Continue",
         data: result.rows[0],
     };
 };
@@ -185,13 +189,31 @@ export const verifyOtpService = async (req) => {
 };
 
 export const loginUserService = async (req) => {
-    const { phone, password } = req.body;
+
+    let { phone, password } = req.body;
+
+    // Remove spaces, +, -, brackets etc.
+    phone = phone?.replace(/\D/g, "");
+
+    // Handle Indian country code
+    if (phone.length === 12 && phone.startsWith("91")) {
+        phone = phone.slice(2);
+    }
 
     if (!phone || !password) {
         return {
             status: false,
             code: 400,
-            message: "phone and password are required",
+            message: "Phone and password are required",
+        };
+    }
+
+    // Indian mobile validation
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+        return {
+            status: false,
+            code: 400,
+            message: "Invalid mobile number",
         };
     }
 
@@ -227,11 +249,10 @@ export const loginUserService = async (req) => {
         };
     }
 
-    // Generate JWT Token
     const token = jwt.sign(
         {
             id: userData.user_id,
-            email: userData.phone
+            mobile: userData.mobile,
         },
         process.env.JWT_SECRET,
         {

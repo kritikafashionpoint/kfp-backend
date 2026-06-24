@@ -241,6 +241,39 @@ CREATE TABLE order_items (
 );
 
 
+CREATE TABLE replacement_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    order_id BIGINT NOT NULL,
+
+    order_item_id BIGINT NOT NULL,
+
+    user_id UUID NOT NULL,
+
+    reason TEXT NOT NULL,
+
+    status VARCHAR(20) DEFAULT 'pending',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_replace_order
+        FOREIGN KEY (order_id)
+        REFERENCES orders(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_replace_item
+        FOREIGN KEY (order_item_id)
+        REFERENCES order_items(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_replace_user
+        FOREIGN KEY (user_id)
+        REFERENCES web_user(user_id)
+        ON DELETE CASCADE
+);
+
 
 
 
