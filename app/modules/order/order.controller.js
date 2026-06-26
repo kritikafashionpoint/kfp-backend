@@ -460,6 +460,8 @@ export const viewAllOrders = async (req, res) => {
             }
         });
 
+        console.log(Object.values(ordersMap))
+
         return res.status(200).json({
             success: true,
             count: Object.keys(ordersMap).length,
