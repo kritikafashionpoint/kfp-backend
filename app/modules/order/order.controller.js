@@ -188,6 +188,18 @@ export const verifyPayment = async (req, res) => {
         const isAuthentic =
             expectedSignature === razorpay_signature;
 
+        console.log("isAuthentic", isAuthentic);
+
+        console.log("Expected", expectedSignature);
+
+        console.log("Received", razorpay_signature);
+
+        console.log("Order ID", order_id);
+
+        console.log("Razorpay Order", razorpay_order_id);
+
+        console.log("Payment", razorpay_payment_id);
+
         if (!isAuthentic) {
 
             await pool.query(
