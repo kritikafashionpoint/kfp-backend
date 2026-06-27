@@ -252,7 +252,13 @@ CREATE TABLE replacement_requests (
 
     reason TEXT NOT NULL,
 
-    status VARCHAR(20) DEFAULT 'pending',
+    description TEXT NOT NULL,
+
+    image TEXT NOT NULL,
+
+    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+
+    admin_remark TEXT,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

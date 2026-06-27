@@ -2,6 +2,24 @@ import pool from "../../config/pgDB.js";
 import razorpay from "../razorpay/razorpay.js";
 import crypto from 'crypto'
 import { sendOrderBookedMail } from "../../config/nodemailer.js";
+import { v2 as cloudinary } from "cloudinary";
+import streamifier from "streamifier";
+
+const uploadToCloudinary = (buffer) => {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            {
+                folder: "replacement_requests",
+            },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve(result);
+            }
+        );
+
+        streamifier.createReadStream(buffer).pipe(stream);
+    });
+};
 
 export const createOrder = async (req, res) => {
     console.log(process.env.RAZORPAY_KEY_ID);
@@ -824,5 +842,257 @@ export const checkUserAddExists = async (req, res) => {
             success: false,
             message: "Internal Server Error"
         });
+    }
+};
+
+
+
+
+
+export const replaceOrder = async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const {
+            order_id,
+            order_item_id,
+            reason,
+            description,
+        } = req.body;
+
+        const user_id = req.user.id;
+
+        if (
+            !order_id ||
+            !order_item_id ||
+            !reason?.trim() ||
+            !description?.trim()
+        ) {
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                success: false,
+                message: "All fields are required.",
+            });
+        }
+
+        if (!req.file) {
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                success: false,
+                message: "Product image is required.",
+            });
+        }
+
+        // Verify order belongs to user and lock row
+        const orderResult = await client.query(
+            `
+            SELECT id, order_status
+            FROM orders
+            WHERE id = $1
+            AND user_id = $2
+            FOR UPDATE
+            `,
+            [order_id, user_id]
+        );
+
+        if (orderResult.rowCount === 0) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                success: false,
+                message: "Order not found.",
+            });
+        }
+
+        const order = orderResult.rows[0];
+
+        // Replacement allowed only when out for delivery
+        if (order.order_status !== "out_for_delivery") {
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Replacement can only be requested for Out For Delivery orders.",
+            });
+        }
+
+        // Verify item belongs to order
+        const itemResult = await client.query(
+            `
+            SELECT id
+            FROM order_items
+            WHERE id = $1
+            AND order_id = $2
+            `,
+            [order_item_id, order_id]
+        );
+
+        if (itemResult.rowCount === 0) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                success: false,
+                message: "Invalid order item.",
+            });
+        }
+
+        // Prevent duplicate request
+        const duplicate = await client.query(
+            `
+            SELECT id
+            FROM replacement_requests
+            WHERE order_item_id = $1
+            AND status IN ('pending','approved')
+            `,
+            [order_item_id]
+        );
+
+        if (duplicate.rowCount > 0) {
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                success: false,
+                message: "Replacement request already submitted.",
+            });
+        }
+
+        // Upload image
+        const uploadedImage = await uploadToCloudinary(req.file.buffer);
+
+        if (!uploadedImage?.secure_url) {
+            throw new Error("Image upload failed.");
+        }
+
+        // Insert replacement request
+        await client.query(
+            `
+            INSERT INTO replacement_requests
+            (
+                order_id,
+                order_item_id,
+                user_id,
+                reason,
+                description,
+                image
+            )
+            VALUES
+            ($1,$2,$3,$4,$5,$6)
+            `,
+            [
+                order_id,
+                order_item_id,
+                user_id,
+                reason.trim(),
+                description.trim(),
+                uploadedImage.secure_url,
+            ]
+        );
+
+        // Update order status
+        await client.query(
+            `
+            UPDATE orders
+            SET
+                order_status = 'replace_requested'
+            WHERE id = $1
+            `,
+            [order_id]
+        );
+
+        await client.query("COMMIT");
+
+        return res.status(200).json({
+            success: true,
+            message: "Replacement request submitted successfully.",
+        });
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+
+        console.error("Replace Order Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong. Please try again.",
+        });
+
+    } finally {
+        client.release();
+    }
+};
+
+export const viewReplacements = async (req, res) => {
+    try {
+
+        const replacements = await pool.query(`
+SELECT
+    rr.id,
+    rr.order_id,
+    rr.order_item_id,
+    rr.reason,
+    rr.description,
+    rr.image,
+    rr.status,
+    rr.admin_remark,
+    rr.created_at,
+
+    wu.user_id,
+    wu.name AS customer_name,
+    wu.mobile,
+
+    o.uuid AS order_uuid,
+    o.payment_status,
+    o.order_status,
+
+    oi.quantity,
+    oi.price,
+
+    p.id AS product_id,
+    p.p_title,
+    p.p_slug,
+    p.p_customer_price,
+    p.p_sale_price,
+
+    pi.index_image AS product_image
+
+FROM replacement_requests rr
+
+INNER JOIN orders o
+    ON rr.order_id = o.id
+
+INNER JOIN order_items oi
+    ON rr.order_item_id = oi.id
+
+INNER JOIN products p
+    ON oi.product_id = p.id
+
+LEFT JOIN product_images pi
+    ON pi.product_id = p.id
+
+INNER JOIN web_user wu
+    ON rr.user_id = wu.user_id
+
+ORDER BY rr.created_at DESC
+`);
+
+        return res.status(200).json({
+            success: true,
+            data: replacements.rows,
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+        });
+
     }
 };
