@@ -1096,3 +1096,211 @@ ORDER BY rr.created_at DESC
 
     }
 };
+
+export const approveReplacement = async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+
+        await client.query("BEGIN");
+
+        const { replacement_request_id } = req.body;
+
+        if (!replacement_request_id) {
+
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                success: false,
+                message: "Replacement request id is required."
+            });
+
+        }
+
+        const replacement = await client.query(
+            `
+            SELECT
+                id,
+                order_id,
+                status
+            FROM replacement_requests
+            WHERE id = $1
+            FOR UPDATE
+            `,
+            [replacement_request_id]
+        );
+
+        if (replacement.rowCount === 0) {
+
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                success: false,
+                message: "Replacement request not found."
+            });
+
+        }
+
+        const request = replacement.rows[0];
+
+        if (request.status !== "pending") {
+
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                success: false,
+                message: `Replacement request already ${request.status}.`
+            });
+
+        }
+
+        await client.query(
+            `
+            UPDATE replacement_requests
+            SET
+                status = 'approved',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1
+            `,
+            [replacement_request_id]
+        );
+
+        await client.query(
+            `
+            UPDATE orders
+            SET
+                order_status = 'replacement_approved'
+            WHERE id = $1
+            `,
+            [request.order_id]
+        );
+
+        await client.query("COMMIT");
+
+        return res.status(200).json({
+            success: true,
+            message: "Replacement request approved successfully."
+        });
+
+    } catch (error) {
+
+        await client.query("ROLLBACK");
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
+
+    } finally {
+
+        client.release();
+
+    }
+};
+
+export const rejectReplacement = async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+
+        await client.query("BEGIN");
+
+        const { replacement_request_id } = req.body;
+
+        if (!replacement_request_id) {
+
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                success: false,
+                message: "Replacement request id is required."
+            });
+
+        }
+
+        const replacement = await client.query(
+            `
+            SELECT
+                id,
+                order_id,
+                status
+            FROM replacement_requests
+            WHERE id = $1
+            FOR UPDATE
+            `,
+            [replacement_request_id]
+        );
+
+        if (replacement.rowCount === 0) {
+
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                success: false,
+                message: "Replacement request not found."
+            });
+
+        }
+
+        const request = replacement.rows[0];
+
+        if (request.status !== "pending") {
+
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                success: false,
+                message: `Replacement request already ${request.status}.`
+            });
+
+        }
+
+        await client.query(
+            `
+            UPDATE replacement_requests
+            SET
+                status = 'rejected',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1
+            `,
+            [replacement_request_id]
+        );
+
+        await client.query(
+            `
+            UPDATE orders
+            SET
+                order_status = 'replacement_rejected'
+            WHERE id = $1
+            `,
+            [request.order_id]
+        );
+
+        await client.query("COMMIT");
+
+        return res.status(200).json({
+            success: true,
+            message: "Replacement request rejected successfully."
+        });
+
+    } catch (error) {
+
+        await client.query("ROLLBACK");
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            error: error.message
+        });
+
+    } finally {
+
+        client.release();
+
+    }
+};

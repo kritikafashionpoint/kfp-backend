@@ -1,7 +1,7 @@
 import express from "express";
 import { addtoCart, addToWishlist, createUser, loginUser, removeFromCart, sendOtp, verifyOtp, viewAllUsers, viewCart, viewWishList } from "../user.controller.js";
 import { checkToken } from "../../../middleware/checkToken.js";
-import { checkUserAddExists, createOrder, getUserAddressById, outForDelivery, replaceOrder, saveUserAddress, verifyPayment, viewAllOrders, viewOrderByUserId, viewReplacements } from "../../order/order.controller.js";
+import { approveReplacement, checkUserAddExists, createOrder, getUserAddressById, outForDelivery, rejectReplacement, replaceOrder, saveUserAddress, verifyPayment, viewAllOrders, viewOrderByUserId, viewReplacements } from "../../order/order.controller.js";
 import upload from "../../../utils/cloudinary_upload.js";
 
 const userRoute = express.Router()
@@ -34,6 +34,10 @@ userRoute.post('/out-for-delivery', outForDelivery)
 userRoute.post('/replace-order', upload.single('image'), checkToken, replaceOrder)
 
 userRoute.post('/view-replacement-requests', viewReplacements)
+userRoute.post('/approve-replacement', approveReplacement)
+userRoute.post('/reject-replacement', rejectReplacement)
+
+
 
 
 
